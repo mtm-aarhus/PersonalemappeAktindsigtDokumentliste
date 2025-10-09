@@ -21,7 +21,7 @@ from openpyxl.styles import Alignment, Font, Protection
 from PIL import ImageFont, ImageDraw, Image
 from urllib.parse import urlencode
 
-def HentFilerOpretMapper(PersonaleSagsID: str, SagsID: str, MappeNavn, GOAPI_URL, GOAPILIVECRED_username, GOAPILIVECRED_password, RobotUsername, RobotPassword, SharepointURL):
+def HentFilerOpretMapper(caseid. PersonaleSagsID: str, SagsID: str, MappeNavn, GOAPI_URL, GOAPILIVECRED_username, GOAPILIVECRED_password, RobotUsername, RobotPassword, SharepointURL):
     '''
     Folder that takes the case ID of a case and creates folders and subfolders in sharepoint containing document lists
     '''
@@ -325,7 +325,7 @@ def HentFilerOpretMapper(PersonaleSagsID: str, SagsID: str, MappeNavn, GOAPI_URL
 
     workbook.save(excel_file_path)
 
-    Mappe1 = str(PersonaleSagsID) +" - Personaleaktindsigtsanmodning"
+    Mappe1 = str(caseid) + " - " + str(PersonaleSagsID) + " - Personaleaktindsigtsanmodning"
     Mappe2 = str(SagsID) + '-' + SagsTitel
 
     # Authenticate to SharePoint using Office365 credentials
@@ -356,7 +356,7 @@ def HentFilerOpretMapper(PersonaleSagsID: str, SagsID: str, MappeNavn, GOAPI_URL
         Mappe1 = Mappe1[:len(Mappe1) - half_excess - 5] + "(...)"
         Mappe2 = Mappe2[:len(Mappe2) - half_excess - 5] + "(...)"
 
-    parent_folder_name = SharepointURL.split(".com")[-1] + "/Delte dokumenter/Dokumentlister" 
+    parent_folder_name = SharepointURL.split(".com")[-1] + "/Delte dokumenter/Dokumentlister"
 
         # Create main folder
     root_folder = ctx.web.get_folder_by_server_relative_url(parent_folder_name)

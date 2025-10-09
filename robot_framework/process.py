@@ -13,10 +13,12 @@ import base64
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.backends import default_backend
+from sqlalchemy import create_engine, text
+from datetime import datetime
+from urllib.parse import quote_plus
 # pylint: disable-next=unused-argument
 def process(orchestrator_connection: OrchestratorConnection, queue_element: QueueElement | None = None) -> None:
     
-
     orchestrator_connection = OrchestratorConnection("Aktindsigt i personalemappe - dokumentliste", os.getenv('OpenOrchestratorSQL'),os.getenv('OpenOrchestratorKey'), None)
     GOAPILIVECRED = orchestrator_connection.get_credential("GOAktApiUser")
     GOAPILIVECRED_username = GOAPILIVECRED.username
@@ -31,6 +33,7 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
     RobotPassword = RobotCredentials.password
     data = json.loads(queue_element.data)
     cpr_encrypted = data.get('citizen_id')
+    caseid = data.get('caseid')
 
     #Herunder hentes sagsinformation
 
@@ -127,7 +130,47 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
     MappeNavne = [element['Title'] for element in rows]
 
 
+
     #Filinformation hentes ud fra GO, og herudfra oprettes mapper i sharepoint
     for i in range(len(SagsIDListe)):
-        HentFilerOpretMapper.HentFilerOpretMapper(PersonaleSagsID=PersonaleSagsID, SagsID= SagsIDListe[i], MappeNavn = MappeNavne[i], GOAPI_URL= GOAPI_URL, GOAPILIVECRED_username= GOAPILIVECRED_username, GOAPILIVECRED_password= GOAPILIVECRED_password, SharepointURL=SharepointURL, RobotUsername=RobotUsername, RobotPassword= RobotPassword)
+        HentFilerOpretMapper.HentFilerOpretMapper(caseid=caseid, PersonaleSagsID=PersonaleSagsID, SagsID= SagsIDListe[i], MappeNavn = MappeNavne[i], GOAPI_URL= GOAPI_URL, GOAPILIVECRED_username= GOAPILIVECRED_username, GOAPILIVECRED_password= GOAPILIVECRED_password, SharepointURL=SharepointURL, RobotUsername=RobotUsername, RobotPassword= RobotPassword)
         print(f'Oprettet mapper for {MappeNavne[i]}')
+
+
+    SQL_SERVER = orchestrator_connection.get_constant('SqlServer').value 
+    DATABASE_NAME = "AktindsigterPersonalemapper"
+
+    odbc_str = (
+        "DRIVER={SQL Server};"
+        f"SERVER={SQL_SERVER};"
+        f"DATABASE={DATABASE_NAME};"
+        "Trusted_Connection=yes;"
+    )
+
+    odbc_str_quoted = quote_plus(odbc_str)
+    engine = create_engine(f"mssql+pyodbc:///?odbc_connect={odbc_str_quoted}", future=True)
+
+
+    dokumentliste_link = (
+        f"{SharepointURL}/Delte dokumenter/Dokumentlister/"
+        f"{caseid} - {PersonaleSagsID} - Personaleaktindsigtsanmodning"
+    )
+
+    sql = text("""
+        UPDATE dbo.cases
+        SET Dokumentlistemappelink = :link,
+            last_run_accepted = :ts
+        WHERE aktid = :caseid
+    """)
+
+    with engine.begin() as conn:
+        result = conn.execute(sql, {
+            "link": dokumentliste_link,
+            "ts": datetime.now(),
+            "caseid": str(caseid)
+        })
+        if result.rowcount == 0:
+            orchestrator_connection.log_info(f"⚠️ Ingen sag fundet med aktid={caseid}")
+        else:
+            orchestrator_connection.log_info(f"✅ Opdateret sag {caseid} med link:")
+
