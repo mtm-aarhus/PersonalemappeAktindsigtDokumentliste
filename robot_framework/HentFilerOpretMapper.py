@@ -21,7 +21,7 @@ from openpyxl.styles import Alignment, Font, Protection
 from PIL import ImageFont, ImageDraw, Image
 from urllib.parse import urlencode
 
-def HentFilerOpretMapper(caseid. PersonaleSagsID: str, SagsID: str, MappeNavn, GOAPI_URL, GOAPILIVECRED_username, GOAPILIVECRED_password, RobotUsername, RobotPassword, SharepointURL):
+def HentFilerOpretMapper(caseid, PersonaleSagsID: str, SagsID: str, MappeNavn, GOAPI_URL, GOAPILIVECRED_username, GOAPILIVECRED_password, RobotUsername, RobotPassword, SharepointURL):
     '''
     Folder that takes the case ID of a case and creates folders and subfolders in sharepoint containing document lists
     '''
