@@ -21,7 +21,7 @@ from openpyxl.styles import Alignment, Font, Protection
 from PIL import ImageFont, ImageDraw, Image
 from urllib.parse import urlencode
 
-def HentFilerOpretMapper(caseid, PersonaleSagsID: str, SagsID: str, MappeNavn, GOAPI_URL, GOAPILIVECRED_username, GOAPILIVECRED_password, RobotUsername, RobotPassword, SharepointURL):
+def HentFilerOpretMapper(caseid, PersonaleSagsID: str, SagsID: str, MappeNavn, GOAPI_URL, GOAPILIVECRED_username, GOAPILIVECRED_password, RobotUsername, RobotPassword, SharepointURL, orchestrator_connection):
     '''
     Folder that takes the case ID of a case and creates folders and subfolders in sharepoint containing document lists
     '''
@@ -329,8 +329,17 @@ def HentFilerOpretMapper(caseid, PersonaleSagsID: str, SagsID: str, MappeNavn, G
     Mappe2 = str(SagsID) + '-' + SagsTitel
 
     # Authenticate to SharePoint using Office365 credentials
-    credentials = UserCredential(RobotUsername, RobotPassword)
-    ctx = ClientContext(SharepointURL).with_credentials(credentials)
+    certification = orchestrator_connection.get_credential("SharePointCert")
+    api = orchestrator_connection.get_credential("SharePointAPI")
+
+    cert_credentials = {
+        "tenant": api.username,
+        "client_id": api.password,
+        "thumbprint": certification.username,
+        "cert_path": certification.password
+    }
+
+    ctx = ClientContext(SharepointURL).with_client_certificate(**cert_credentials)
 
     # Function to sanitize folder names
     def sanitize_folder_name(folder_name):
