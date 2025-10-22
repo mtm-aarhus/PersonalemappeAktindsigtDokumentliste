@@ -24,7 +24,7 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
     GOAPILIVECRED_password = GOAPILIVECRED.password
     GOAPI_URL = orchestrator_connection.get_constant('GOApiURL').value
     SharepointURL = orchestrator_connection.get_constant('AktindsigtPersonalemapperSharepointURL').value
-    EncryptionKey = orchestrator_connection.get_credential('PersonalesagsEncryptionKey').value
+    EncryptionKey = orchestrator_connection.get_credential('PersonalesagsEncryptionKey').password
 
     #Get Robot Credentials
     RobotCredentials = orchestrator_connection.get_credential("Robot365User")
