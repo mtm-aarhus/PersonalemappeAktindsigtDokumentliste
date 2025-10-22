@@ -42,15 +42,16 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
         iv = combined[:16]
         ciphertext = combined[16:]
 
-        backend = default_backend()
-        cipher = Cipher(algorithms.AES(EncryptionKey), modes.CBC(iv), backend=backend)
+        key = base64.b64decode(EncryptionKey)  # tilføj denne linje
+        cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
 
         decryptor = cipher.decryptor()
         padded_plaintext = decryptor.update(ciphertext) + decryptor.finalize()
 
         unpadder = padding.PKCS7(128).unpadder()
         plaintext = unpadder.update(padded_plaintext) + unpadder.finalize()
-        return plaintext.decode()
+        return plaintext.decode('utf-8')
+
 
     #-- Initialize session
     session = requests.Session()
