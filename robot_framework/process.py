@@ -18,8 +18,7 @@ from datetime import datetime
 from urllib.parse import quote_plus
 # pylint: disable-next=unused-argument
 def process(orchestrator_connection: OrchestratorConnection, queue_element: QueueElement | None = None) -> None:
-    
-    orchestrator_connection = OrchestratorConnection("Aktindsigt i personalemappe - dokumentliste", os.getenv('OpenOrchestratorSQL'),os.getenv('OpenOrchestratorKey'), None)
+
     GOAPILIVECRED = orchestrator_connection.get_credential("GOAktApiUser")
     GOAPILIVECRED_username = GOAPILIVECRED.username
     GOAPILIVECRED_password = GOAPILIVECRED.password
