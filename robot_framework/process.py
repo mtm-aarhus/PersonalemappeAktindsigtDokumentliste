@@ -133,7 +133,7 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
 
     #Filinformation hentes ud fra GO, og herudfra oprettes mapper i sharepoint
     for i in range(len(SagsIDListe)):
-        HentFilerOpretMapper.HentFilerOpretMapper(caseid=caseid, PersonaleSagsID=PersonaleSagsID, SagsID= SagsIDListe[i], MappeNavn = MappeNavne[i], GOAPI_URL= GOAPI_URL, GOAPILIVECRED_username= GOAPILIVECRED_username, GOAPILIVECRED_password= GOAPILIVECRED_password, SharepointURL=SharepointURL, RobotUsername=RobotUsername, RobotPassword= RobotPassword)
+        HentFilerOpretMapper.HentFilerOpretMapper(caseid=caseid, PersonaleSagsID=PersonaleSagsID, SagsID= SagsIDListe[i], MappeNavn = MappeNavne[i], GOAPI_URL= GOAPI_URL, GOAPILIVECRED_username= GOAPILIVECRED_username, GOAPILIVECRED_password= GOAPILIVECRED_password, SharepointURL=SharepointURL, RobotUsername=RobotUsername, RobotPassword= RobotPassword, orchestrator_connection= orchestrator_connection)
         print(f'Oprettet mapper for {MappeNavne[i]}')
 
 
