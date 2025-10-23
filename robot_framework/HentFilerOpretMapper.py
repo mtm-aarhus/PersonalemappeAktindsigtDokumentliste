@@ -386,3 +386,4 @@ def HentFilerOpretMapper(caseid, PersonaleSagsID: str, SagsID: str, MappeNavn, G
         os.remove(file_path)
     else:
         print(f"File '{file_path}' does not exist.")
+

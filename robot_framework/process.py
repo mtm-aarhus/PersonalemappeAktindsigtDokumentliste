@@ -136,6 +136,10 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
         HentFilerOpretMapper.HentFilerOpretMapper(caseid=caseid, PersonaleSagsID=PersonaleSagsID, SagsID= SagsIDListe[i], MappeNavn = MappeNavne[i], GOAPI_URL= GOAPI_URL, GOAPILIVECRED_username= GOAPILIVECRED_username, GOAPILIVECRED_password= GOAPILIVECRED_password, SharepointURL=SharepointURL, RobotUsername=RobotUsername, RobotPassword= RobotPassword, orchestrator_connection= orchestrator_connection)
         print(f'Oprettet mapper for {MappeNavne[i]}')
 
+    overmappenavn = str(caseid) + " - " + str(PersonaleSagsID) + " - Personaleaktindsigtsanmodning"
+    if len(overmappenavn) > 99:
+        overmappenavn = overmappenavn[:95] + "(...)"
+
 
     SQL_SERVER = orchestrator_connection.get_constant('SqlServer').value 
     DATABASE_NAME = "AktindsigterPersonalemapper"
@@ -159,7 +163,8 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
     sql = text("""
         UPDATE dbo.cases
         SET Dokumentlistemappelink = :link,
-            last_run_accepted = :ts
+            last_run_accepted = :ts,
+            documentlistfolder = :overmappenavn
         WHERE aktid = :caseid
     """)
 
@@ -167,6 +172,7 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
         result = conn.execute(sql, {
             "link": dokumentliste_link,
             "ts": datetime.now(),
+            "overmappenavn": overmappenavn
             "caseid": str(caseid)
         })
         if result.rowcount == 0:
