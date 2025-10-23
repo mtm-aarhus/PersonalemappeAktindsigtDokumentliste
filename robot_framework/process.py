@@ -172,7 +172,7 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
         result = conn.execute(sql, {
             "link": dokumentliste_link,
             "ts": datetime.now(),
-            "overmappenavn": overmappenavn
+            "overmappenavn": overmappenavn,
             "caseid": str(caseid)
         })
         if result.rowcount == 0:
