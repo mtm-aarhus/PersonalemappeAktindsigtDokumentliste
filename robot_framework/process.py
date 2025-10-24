@@ -16,7 +16,8 @@ from cryptography.hazmat.backends import default_backend
 from sqlalchemy import create_engine, text
 from datetime import datetime
 from urllib.parse import quote_plus
-# pylint: disable-next=unused-argument
+import re
+
 def process(orchestrator_connection: OrchestratorConnection, queue_element: QueueElement | None = None) -> None:
 
     GOAPILIVECRED = orchestrator_connection.get_credential("GOAktApiUser")
@@ -33,8 +34,14 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
     data = json.loads(queue_element.data)
     cpr_encrypted = data.get('citizen_id')
     caseid = data.get('caseid')
+    personalesagsid = data.get('personalesagsid')
 
     #Herunder hentes sagsinformation
+    MANUAL_CASE_REGEX = re.compile(r"^\d{6}-\d{4}$")
+
+    def is_manual_case(case_id: str) -> bool:
+        """Returnerer True hvis case_id matcher formatet for manuelt oprettede sager."""
+        return bool(MANUAL_CASE_REGEX.match(case_id))
 
     #For decryption sensitive information
     def decrypt(b64_ciphertext: str) -> str:
@@ -59,44 +66,48 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
 
     #Get CPR from queue element
     #data = json.loads(decrypt(queue_element['data]))
-    cpr = decrypt(cpr_encrypted)
-    cpr_reformatted = f'{cpr[:6]}'+'-'f'{cpr[-4:]}'
+    if not is_manual_case(caseid):
+        cpr = decrypt(cpr_encrypted)
+        cpr_reformatted = f'{cpr[:6]}'+'-'f'{cpr[-4:]}'
 
-    #-- Getting personalesagsid from cpr
-    url = f"{GOAPI_URL}/_goapi/search/ExecuteModernSearch"
+        #-- Getting personalesagsid from cpr
+        url = f"{GOAPI_URL}/_goapi/search/ExecuteModernSearch"
 
-    payload = json.dumps({
-    "QueryPageIndex":1,
-    "PageSize":0,
-    "QueryPhrase":f'{cpr}',
-    "QueryType":"Cases",
-    "TrimToOpenedCases":True,
-    "ResultTypeInternalName":"6376435f-d715-48ad-8e0c-0a35d85f0d5e",
-    "ResultTypeName":"Oversager",
-    "SearchContentDefinitionEntryType":2,
-    "ResultViewInternalName":"4b82f943-e2bb-48aa-b2b3-6ab8e7d948d6",
-    "AdditionalSelectColumns":["CCMTitle","CCMEmploymentCode","CCMContactData","CCMContactDataCPR","CCMAfdeling","CCMMedarbejdernummer","CCMCaseOwner","CCMParentCase","docicon","CCMDocID","CCMCaseID"],
-    "ResultTypeListNameOrType":None,
-    "ResultTypeSearchOnlyItems":True,
-    "ResultTypeQueryFilter":"AND -ccmparentcase:\"P*\" -ccmparentcase:\"B*\" -ccmparentcase:\"E*\"",
-    "CaseQueryFieldCollection":[],
-    "QueryFieldCollection":[],
-    "CaseTypePrefixes":["PER"],
-    "SortDirection1":1,
-    "ResultViewSortField1":None,
-    "ResultViewSortField2":None,
-    "ResultViewSortOrder1":2,
-    "ResultViewSortOrder2":2,
-    "QueryScope":0})
-    headers = {
-    'Content-Type': 'application/json'
-    }
+        payload = json.dumps({
+        "QueryPageIndex":1,
+        "PageSize":0,
+        "QueryPhrase":f'{cpr}',
+        "QueryType":"Cases",
+        "TrimToOpenedCases":True,
+        "ResultTypeInternalName":"6376435f-d715-48ad-8e0c-0a35d85f0d5e",
+        "ResultTypeName":"Oversager",
+        "SearchContentDefinitionEntryType":2,
+        "ResultViewInternalName":"4b82f943-e2bb-48aa-b2b3-6ab8e7d948d6",
+        "AdditionalSelectColumns":["CCMTitle","CCMEmploymentCode","CCMContactData","CCMContactDataCPR","CCMAfdeling","CCMMedarbejdernummer","CCMCaseOwner","CCMParentCase","docicon","CCMDocID","CCMCaseID"],
+        "ResultTypeListNameOrType":None,
+        "ResultTypeSearchOnlyItems":True,
+        "ResultTypeQueryFilter":"AND -ccmparentcase:\"P*\" -ccmparentcase:\"B*\" -ccmparentcase:\"E*\"",
+        "CaseQueryFieldCollection":[],
+        "QueryFieldCollection":[],
+        "CaseTypePrefixes":["PER"],
+        "SortDirection1":1,
+        "ResultViewSortField1":None,
+        "ResultViewSortField2":None,
+        "ResultViewSortOrder1":2,
+        "ResultViewSortOrder2":2,
+        "QueryScope":0})
+        headers = {
+        'Content-Type': 'application/json'
+        }
 
-    response = session.request("POST", url, headers=headers, data=payload)
-    data = response.json()['results']['Results']
-    caseurl = next((item["caseurl"] for item in data if cpr_reformatted in item.get("title", "")), None)
-    PersonaleSagsID = caseurl.split('/')[-1]
-    AktID = caseurl.split('/')[1]
+        response = session.request("POST", url, headers=headers, data=payload)
+        data = response.json()['results']['Results']
+        caseurl = next((item["caseurl"] for item in data if cpr_reformatted in item.get("title", "")), None)
+        PersonaleSagsID = caseurl.split('/')[-1]
+        AktID = caseurl.split('/')[1]
+    else:
+        PersonaleSagsID = personalesagsid
+
 
     #-- Getting list id from personesagsid
     url = f"{GOAPI_URL}/cases/{AktID}/{PersonaleSagsID}/_goapi/cases/CaseDetailsInternal"
