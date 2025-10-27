@@ -106,6 +106,40 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
         PersonaleSagsID = caseurl.split('/')[-1]
         AktID = caseurl.split('/')[1]
     else:
+        #-- Getting aktid from personalesagsnummer
+        url = f"{GOAPI_URL}/_goapi/search/ExecuteModernSearch"
+
+        payload = json.dumps({
+        "QueryPageIndex":1,
+        "PageSize":0,
+        "QueryPhrase":f'{personalesagsid}',
+        "QueryType":"Cases",
+        "TrimToOpenedCases":False,
+        "ResultTypeInternalName":"6376435f-d715-48ad-8e0c-0a35d85f0d5e",
+        "ResultTypeName":"Oversager",
+        "SearchContentDefinitionEntryType":2,
+        "ResultViewInternalName":"4b82f943-e2bb-48aa-b2b3-6ab8e7d948d6",
+        "AdditionalSelectColumns":["CCMTitle","CCMEmploymentCode","CCMContactData","CCMContactDataCPR","CCMAfdeling","CCMMedarbejdernummer","CCMCaseOwner","CCMParentCase","docicon","CCMDocID","CCMCaseID"],
+        "ResultTypeListNameOrType":None,
+        "ResultTypeSearchOnlyItems":True,
+        "ResultTypeQueryFilter":"AND -ccmparentcase:\"P*\" -ccmparentcase:\"B*\" -ccmparentcase:\"E*\"",
+        "CaseQueryFieldCollection":[],
+        "QueryFieldCollection":[],
+        "CaseTypePrefixes":["PER"],
+        "SortDirection1":1,
+        "ResultViewSortField1":None,
+        "ResultViewSortField2":None,
+        "ResultViewSortOrder1":2,
+        "ResultViewSortOrder2":2,
+        "QueryScope":0})
+        headers = {
+        'Content-Type': 'application/json'
+        }
+
+        response = session.request("POST", url, headers=headers, data=payload)
+        data = response.json()['results']['Results']
+        caseurl = next((item["caseurl"] for item in data if personalesagsid in item.get("caseid", "")), None)
+        AktID = caseurl.split('/')[1]
         PersonaleSagsID = personalesagsid
 
 
