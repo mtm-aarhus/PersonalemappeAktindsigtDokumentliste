@@ -36,12 +36,14 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
     caseid = data.get('caseid')
     personalesagsid = data.get('personalesagsid')
 
-    #Herunder hentes sagsinformation
-    MANUAL_CASE_REGEX = re.compile(r"^\d{6}-\d{4}$")
 
-    def is_manual_case(case_id: str) -> bool:
-        """Returnerer True hvis case_id matcher formatet for manuelt oprettede sager."""
-        return bool(MANUAL_CASE_REGEX.match(case_id))
+    def is_manual_case(cpr_encrypted) -> bool:
+        """Returnerer True hvis der ikke er et cprnummer."""
+        if not cpr_encrypted:
+            is_manual = True
+        else:
+            is_manual = False
+        return is_manual
 
     #For decryption sensitive information
     def decrypt(b64_ciphertext: str) -> str:
@@ -66,7 +68,7 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
 
     #Get CPR from queue element
     #data = json.loads(decrypt(queue_element['data]))
-    if not is_manual_case(caseid):
+    if not is_manual_case(cpr_encrypted):
         cpr = decrypt(cpr_encrypted)
         cpr_reformatted = f'{cpr[:6]}'+'-'f'{cpr[-4:]}'
 
