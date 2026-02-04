@@ -17,6 +17,35 @@ from sqlalchemy import create_engine, text
 from datetime import datetime
 from urllib.parse import quote_plus
 import re
+import smtplib
+from email.message import EmailMessage
+from robot_framework import config
+
+def send_error_email(to_address: str , caseid):
+    """Sends and email to caseworker if caseurl is not valid (most likely invalid casenumber)
+    """
+    # Create message
+    msg = EmailMessage()
+    msg['to'] = to_address
+    msg['from'] = "personaleindsigt@aarhus.dk"
+    msg['subject'] = f"Fejl! dokumentliste ikke oprettet: {caseid}"
+
+    # Create an HTML message with the exception and screenshot
+    html_message = f"""
+    <html>
+        <body>
+            <p>Der skete en fejl i oprettelsen af dokumentlisten for aktindsigtssag {caseid}</p>
+            <p>Tjek om personalesagsnummeret er korrekt.</p>
+        </body>
+    </html>
+    """
+
+    msg.set_content("Please enable HTML to view this message.")
+    msg.add_alternative(html_message, subtype='html')
+
+    # Send message
+    with smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT) as smtp:
+        smtp.send_message(msg)
 
 def process(orchestrator_connection: OrchestratorConnection, queue_element: QueueElement | None = None) -> None:
 
@@ -35,7 +64,7 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
     cpr_encrypted = data.get('citizen_id')
     caseid = data.get('caseid')
     personalesagsid = data.get('personalesagsid')
-
+    caseworker_email = data.get('caseworker_email', None)
 
     def is_manual_case(cpr_encrypted) -> bool:
         """Returnerer True hvis der ikke er et cprnummer."""
@@ -141,9 +170,14 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
         response = session.request("POST", url, headers=headers, data=payload)
         data = response.json()['results']['Results']
         caseurl = next((item["caseurl"] for item in data if personalesagsid in item.get("caseid", "")), None)
+        if not caseurl: 
+            if caseworker_email:
+                send_error_email(caseworker_email, caseid)
+                return
+            else:
+                return
         AktID = caseurl.split('/')[1]
         PersonaleSagsID = personalesagsid
-
 
     #-- Getting list id from personesagsid
     url = f"{GOAPI_URL}/cases/{AktID}/{PersonaleSagsID}/_goapi/cases/CaseDetailsInternal"
