@@ -72,10 +72,8 @@ def HentFilerOpretMapper(caseid, PersonaleSagsID: str, SagsID: str, MappeNavn, G
 
     for item in ViewsIDArray:
         if item["ViewName"] == "IkkeJournaliseret.aspx":
-            print('Den er ikke journaliseret ')
             ikke_journaliseret_id = item["ViewId"]  
         elif item["ViewName"] == "Journaliseret.aspx":
-            print('Den er journaliseret ')
             journaliseret_id = item["ViewId"]
 
     view_ids_to_use = [ikke_journaliseret_id, journaliseret_id]
@@ -199,7 +197,7 @@ def HentFilerOpretMapper(caseid, PersonaleSagsID: str, SagsID: str, MappeNavn, G
 
     # Ensure 'Akt ID' is numeric and clean
     data_table['Akt ID'] = pd.to_numeric(data_table['Akt ID'].astype(str).str.strip(), errors='coerce')
-    print('Doing data table stuff')
+
 
     # Sort values if the table is not empty
     if not data_table.empty:

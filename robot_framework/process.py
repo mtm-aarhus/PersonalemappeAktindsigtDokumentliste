@@ -54,17 +54,19 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
     GOAPILIVECRED_password = GOAPILIVECRED.password
     GOAPI_URL = orchestrator_connection.get_constant('GOApiURL').value
     SharepointURL = orchestrator_connection.get_constant('AktindsigtPersonalemapperSharepointURL').value
-    EncryptionKey = orchestrator_connection.get_credential('PersonalesagsEncryptionKey').password
+    EncryptionKey = os.getenv('PersonaleIndsigtEncryptionKey')
 
     #Get Robot Credentials
     RobotCredentials = orchestrator_connection.get_credential("Robot365User")
     RobotUsername = RobotCredentials.username
     RobotPassword = RobotCredentials.password
-    data = json.loads(queue_element.data)
+    # data = json.loads(queue_element.data)
+    data = json.loads(queue_element) #Til test
     cpr_encrypted = data.get('citizen_id')
     caseid = data.get('caseid')
     personalesagsid = data.get('personalesagsid')
     caseworker_email = data.get('caseworker_email', None)
+    selected_folders = data.get('folders', None)
 
     def is_manual_case(cpr_encrypted) -> bool:
         """Returnerer True hvis der ikke er et cprnummer."""
@@ -210,12 +212,15 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
     SagsIDListe = [element['CaseID'] for element in rows]
     MappeNavne = [element['Title'] for element in rows]
 
+    # Filtrer til kun valgte mapper, eller brug alle hvis ingen er angivet
+    if selected_folders:
+        filtered = [(sid, navn) for sid, navn in zip(SagsIDListe, MappeNavne) if navn in selected_folders]
+    else:
+        filtered = list(zip(SagsIDListe, MappeNavne))
 
-
-    #Filinformation hentes ud fra GO, og herudfra oprettes mapper i sharepoint
-    for i in range(len(SagsIDListe)):
-        HentFilerOpretMapper.HentFilerOpretMapper(caseid=caseid, PersonaleSagsID=PersonaleSagsID, SagsID= SagsIDListe[i], MappeNavn = MappeNavne[i], GOAPI_URL= GOAPI_URL, GOAPILIVECRED_username= GOAPILIVECRED_username, GOAPILIVECRED_password= GOAPILIVECRED_password, SharepointURL=SharepointURL, RobotUsername=RobotUsername, RobotPassword= RobotPassword, orchestrator_connection= orchestrator_connection)
-        print(f'Oprettet mapper for {MappeNavne[i]}')
+    for SagsID, MappeNavn in filtered:
+        HentFilerOpretMapper.HentFilerOpretMapper(caseid=caseid, PersonaleSagsID=PersonaleSagsID, SagsID=SagsID, MappeNavn=MappeNavn, GOAPI_URL=GOAPI_URL, GOAPILIVECRED_username=GOAPILIVECRED_username, GOAPILIVECRED_password=GOAPILIVECRED_password, SharepointURL=SharepointURL, RobotUsername=RobotUsername, RobotPassword=RobotPassword, orchestrator_connection=orchestrator_connection)
+        print(f'Oprettet mapper for {MappeNavn}')
 
     overmappenavn = str(caseid) + " - " + str(PersonaleSagsID) + " - Personaleaktindsigtsanmodning"
     if len(overmappenavn) > 99:
