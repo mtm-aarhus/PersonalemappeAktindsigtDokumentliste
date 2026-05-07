@@ -55,13 +55,12 @@ def process(orchestrator_connection: OrchestratorConnection, queue_element: Queu
     GOAPI_URL = orchestrator_connection.get_constant('GOApiURL').value
     SharepointURL = orchestrator_connection.get_constant('AktindsigtPersonalemapperSharepointURL').value
     EncryptionKey = os.getenv('PersonaleIndsigtEncryptionKey')
-
     #Get Robot Credentials
     RobotCredentials = orchestrator_connection.get_credential("Robot365User")
     RobotUsername = RobotCredentials.username
     RobotPassword = RobotCredentials.password
-    # data = json.loads(queue_element.data)
-    data = json.loads(queue_element) #Til test
+    data = json.loads(queue_element.data)
+    # data = json.loads(queue_element) #Til test
     cpr_encrypted = data.get('citizen_id')
     caseid = data.get('caseid')
     personalesagsid = data.get('personalesagsid')
